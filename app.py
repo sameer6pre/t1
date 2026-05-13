@@ -54,8 +54,28 @@ def fetch_internal_url(url: str):
 
 # ❌ 9. Dangerous eval
 def calculate(expression: str):
-    # Remote code execution risk
-    return eval(expression)
+    """Safely evaluate simple Python literals and arithmetic expressions.
+
+    This implementation restricts evaluation to a safe AST subset (numbers and basic arithmetic operators).
+    """
+    import ast
+
+    # Allowed node types for safe arithmetic evaluation
+    allowed_nodes = {
+        ast.Expression, ast.BinOp, ast.UnaryOp, ast.Num, ast.Load,
+        ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow,
+        ast.UAdd, ast.USub, ast.Tuple, ast.List, ast.Constant
+    }
+
+    node = ast.parse(expression, mode="eval")
+
+    for n in ast.walk(node):
+        if not isinstance(n, tuple(allowed_nodes)):
+            raise ValueError("Disallowed expression")
+
+    # PRECOGS_FIX: replaced eval() with a restricted AST evaluator to prevent arbitrary code execution
+    compiled = compile(node, filename="&lt;ast>", mode="eval")
+    return eval(compiled, {"__builtins__": {}}, {})
 
 
 # ❌ 10. Weak file permissions
